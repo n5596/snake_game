@@ -47,7 +47,8 @@ class Game{
 	int fruit_x, fruit_y;
 	int score;
         char direction;
-	int tail_x[100], tail_y[100];
+        vector<vector<int> > tail_pos;
+
 	int tail_len;
 
 	Game(int w, int h){
@@ -57,7 +58,7 @@ class Game{
 
 	void setup(){
 	    /*
-		This method sets the game up and initializes the game variables. The snake is initially at the center of the grid and fruit position is randomly generated.
+		This method sets the game up and initializes the game variables. The snake is initially at the center of the grid and is tail-less.
 	    */
 	    game_over = false;
 	    direction = 'q';
@@ -65,20 +66,18 @@ class Game{
             pos_x = width/2;
 	    pos_y = width/2;
 	    
-	    for (int i = 0; i < 100; i++){
-		tail_x[i], tail_y[i] = -1, -1;
-	    }
-
 	    tail_len = 0;
 	    reset_fruit();
 	}
 
 	void reset_fruit(){
+	    /* Resets the fruit to a random location in the grid. */
 	    fruit_x = rand()%width;
 	    fruit_y = rand()%height;
 	}
 
 	void draw_grid(){
+	    /* Draws the grid including the snake and the fruit. */
 	    system("clear");
 	    int i, j, k;
 	    bool found;
@@ -93,21 +92,16 @@ class Game{
 		    if (j == 0)
 			cout << "#";
 		
-		    for (k = 0; k < tail_len; k++){
-			if (tail_x[k] == j && tail_y[k] == i){
-			    cout << "o";
-			    found = true;
-			    break;
-			}
-		    }
- 
-		    if (found)
+   		    vector<int> curr_pos{j, i};
+		    if (std::find(tail_pos.begin(), tail_pos.end(), curr_pos) != tail_pos.end()){
+			cout << "o";
 			continue;
+		    }
 
 		    if (j == pos_x && i == pos_y)
 			cout << "O";
 		    else if (j == fruit_x && i == fruit_y)
-			cout << "$";
+			cout << "F";
 		    else
 		        cout << " ";
 		    if (j == width-1)
@@ -119,12 +113,12 @@ class Game{
 	    for (i = 0; i < width+2; i++)
 		cout << "#";
 	    cout << "\n";
-	    //direction = 'q'; // resetting so it doesn't keep travelling in the same direction
 
 	    cout << "Score: " << score << "\n";
 	}
 
 	void check_for_input(){
+	    /* Checks to see if input has been provided. The ASWD (lowercase) keys are used to denote left, down, up and right, respectively. If the user presses x, the game stops and any other key is ignored. */
 	    if (kbhit()){
 		char pressed_key = getchar();
 
@@ -134,31 +128,18 @@ class Game{
 		    game_over = true;
 	    }
 	}
-	
-	void print_tail(){
-            cout << "printing tail" << endl;
-	    for(int i = 0; i < tail_len; i++){
-		cout << tail_x[i] << "   " << tail_y[i] << endl;
-	    }
-	}
-	void move_tail(){
-	    int prev_x, prev_y, prev_xx, prev_yy;
-	    prev_x = tail_x[0];
-	    prev_y = tail_y[0];
-	    tail_x[0] = pos_x;
-            tail_y[0] = pos_y;
 
-	    for (int i = 1; i < tail_len; i++){
-		prev_xx = tail_x[i];
-                prev_yy = tail_y[i];
-		tail_x[i] = prev_x;
-	        tail_y[i] = prev_y;
-		prev_x = prev_xx;
-		prev_y = prev_yy;
+	void move_tail(){
+	    /* Moves the tail according to user input. */
+	    tail_pos.push_back(vector<int>{pos_x, pos_y});
+
+	    while (tail_pos.size() > tail_len){
+		tail_pos.erase(tail_pos.begin());
 	    }
 	}
 
 	void move(){
+	    /* Moves the snake according to the input provided (ASWD). If the snake touches the walls, the player loses whereas if the snake eats the food, it grows larger and the score increments by 10. */
 	    move_tail();
 	    if (direction == 'a') // LEFT
 		pos_x = pos_x-1; 
@@ -184,7 +165,6 @@ int main(){
     Game game(20, 20);
     game.setup();
     while (game.game_over == false){
-
 	game.draw_grid();
 	game.check_for_input();
 	game.move();
